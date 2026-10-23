@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>숲속 RPG</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(#bde8a5, #6da85b);
+  color: #18351b;
+}
+
+#app {
+  max-width: 480px;
+  min-height: 100vh;
+  margin: auto;
+  padding: 16px;
+}
+
+.screen {
+  display: none;
+}
+
+.screen.active {
+  display: block;
+}
+
+.card {
+  background: rgba(255,255,255,.92);
+  border-radius: 20px;
+  padding: 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 5px 18px rgba(0,0,0,.12);
+}
+
+.title {
+  text-align: center;
+  padding: 35px 15px;
+}
+
+.title .forest {
+  font-size: 75px;
+}
+
+h1 {
+  font-size: 36px;
+  margin: 10px 0;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+button {
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  padding: 14px;
+  margin: 5px 0;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  background: #4d9147;
+  color: white;
+}
+
+button:hover {
+  background: #397437;
+}
+
+button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.stat {
+  background: #eef8e9;
+  border-radius: 12px;
+  padding: 10px;
+  text-align: center;
+}
+
+.battle {
+  text-align: center;
+}
+
+.monster {
+  font-size: 80px;
+  margin: 10px;
+}
+
+.hpbar {
+  height: 14px;
+  background: #ddd;
+  border-radius: 20px;
+  overflow: hidden;
+  margin: 5px 0 12px;
+}
+
+.hp {
+  height: 100%;
+  background: #48a64a;
+  transition: .3s;
+}
+
+.monsterhp {
+  background: #d94b4b;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.job {
+  text-align: left;
+  background: #f1f8ed;
+  color: #18351b;
+  border: 2px solid #d4e9ce;
+}
+
+.job span {
+  font-size: 30px;
+  margin-right: 8px;
+}
+
+.dialog {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.face {
+  font-size: 42px;
+}
+
+.log {
+  min-height: 70px;
+  background: #f5f5f5;
+}
+
+.back {
+  background: #666;
+}
+
+.skill {
+  background: #7b4bb7;
+}
+
+.skill:hover {
+  background: #633a96;
+}
+</style>
+</head>
+
+<body>
+
+<div id="app">
+
+  <section id="home" class="screen active">
+    <div class="card title">
+      <div class="forest">🌲</div>
+      <h1>숲속 RPG</h1>
+      <p>숲속에서 성장하는 작은 모험!</p>
+    </div>
+
+    <div class="card">
+      <button onclick="startGame()">🎮 모험 시작</button>
+      <button onclick="showCharacter()">🧑 캐릭터</button>
+    </div>
+  </section>
+
+  <section id="jobScreen" class="screen">
+    <div class="card title">
+      <div class="forest">✨</div>
+      <h2>직업을 선택하세요!</h2>
+      <p>Lv.2가 되면 직업을 선택할 수 있습니다.</p>
+    </div>
+
+    <div class="card">
+
+      <button class="job" onclick="chooseJob('전사')">
+        <span>⚔️</span>
+        <b>전사</b><br>
+        높은 공격력과 방어력<br>
+        스킬: 💥 강타
+      </button>
+
+      <button class="job" onclick="chooseJob('궁수')">
+        <span>🏹</span>
+        <b>궁수</b><br>
+        높은 치명타 확률<br>
+        스킬: 🏹 연사
+      </button>
+
+      <button class="job" onclick="chooseJob('마법사')">
+        <span>🔮</span>
+        <b>마법사</b><br>
+        강력한 마법 공격<br>
+        스킬: 🔥 파이어볼
+      </button>
+
+    </div>
+  </section>
+
+  <section id="character" class="screen">
+
+    <div class="card title">
+      <div class="forest">🧙</div>
+      <h2>내 캐릭터</h2>
+    </div>
+
+    <div class="stats card">
+
+      <div class="stat">
+        ⭐ 레벨<br>
+        <b id="cLevel">1</b>
+      </div>
+
+      <div class="stat">
+        💼 직업<br>
+        <b id="cJob">없음</b>
+      </div>
+
+      <div class="stat">
+        💰 골드<br>
+        <b id="cGold">0</b>
+      </div>
+
+    </div>
+
+    <div class="card">
+
+      <p>
+        ❤️ 최대 HP:
+        <b id="cMaxHp">30</b>
+      </p>
+
+      <p>
+        ⚔️ 공격력:
+        <b id="cAtk">6</b>
+      </p>
+
+      <p>
+        🛡️ 방어력:
+        <b id="cDef">2</b>
+      </p>
+
+      <p>
+        ✨ 스킬:
+        <b id="cSkill">없음</b>
+      </p>
+
+    </div>
+
+    <button class="back" onclick="showScreen('home')">
+      ← 메인으로
+    </button>
+
+  </section>
+
+  <section id="game" class="screen">
+
+    <div class="card">
+
+      <b>🌲 숲속</b>
+
+      <span style="float:right">
+        Lv.<b id="level">1</b>
+        · <b id="job">초보자</b>
+        · 💰<b id="gold">0</b>
+      </span>
+
+    </div>
+
+    <div class="card dialog">
+
+      <div class="face">
+        🧙
+      </div>
+
+      <div>
+        <b>숲의 촌장</b>
+        <p id="speech">
+          숲속 모험을 시작해보자!
+        </p>
+      </div>
+
+    </div>
+
+    <div class="card battle">
+
+      <div class="monster" id="monster">
+        🐗
+      </div>
+
+      <h2 id="monsterName">
+        숲멧돼지
+      </h2>
+
+      <p>
+        👾 HP
+        <b id="monsterHp">12</b> /
+        <span id="monsterMaxHp">12</span>
+      </p>
+
+      <div class="hpbar">
+        <div
+          id="monsterBar"
+          class="hp monsterhp"
+          style="width:100%">
+        </div>
+      </div>
+
+      <p>
+        ❤️ 내 HP
+        <b id="playerHp">30</b> /
+        <span id="playerMaxHp">30</span>
+      </p>
+
+      <div class="hpbar">
+        <div
+          id="playerBar"
+          class="hp"
+          style="width:100%">
+        </div>
+      </div>
+
+    </div>
+
+    <div class="actions">
+
+      <button onclick="attack()">
+        ⚔️ 공격
+      </button>
+
+      <button
+        id="skillButton"
+        class="skill"
+        onclick="useSkill()">
+        ✨ 스킬
+      </button>
+
+      <button onclick="heal()">
+        🧪 회복
+      </button>
+
+      <button
+        class="back"
+        onclick="showScreen('home')">
+        🏠 마을
+      </button>
+
+    </div>
+
+    <div class="card log" id="log">
+      🌲 몬스터가 나타났다!
+    </div>
+
+  </section>
+
+</div>
+
+<script>
+
+let level = 1;
+let gold = 0;
+
+let hp = 30;
+let maxHp = 30;
+
+let monsterHp = 12;
+let monsterMaxHp = 12;
+
+let job = "없음";
+
+let skillCooldown = 0;
+
+let gameOver = false;
+
+/* 화면 전환 */
+function showScreen(id) {
+
+  document
+    .querySelectorAll(".screen")
+    .forEach(screen => {
+      screen.classList.remove("active");
+    });
+
+  document
+    .getElementById(id)
+    .classList.add("active");
+}
+
+/* 능력치 */
+function getStats() {
+
+  let atk = 5 + level;
+  let def = 2 + Math.floor(level / 2);
+
+  if (job === "전사") {
+
+    atk += level * 2;
+    def += level;
+
+  }
+
+  if (job === "궁수") {
+
+    atk += level;
+
+  }
+
+  if (job === "마법사") {
+
+    atk += level * 3;
+
+  }
+
+  return {
+    atk: atk,
+    def: def
+  };
+}
+
+/* 게임 시작 */
+function startGame() {
+
+  gameOver = false;
+
+  hp = maxHp;
+
+  if (job === "없음" && level >= 2) {
+
+    showScreen("jobScreen");
+
+    return;
+  }
+
+  showScreen("game");
+
+  spawnMonster();
+
+  document.getElementById("speech").textContent =
+    "조심해! 숲속에 몬스터가 나타났어!";
+
+  update();
+}
+
+/* 몬스터 생성 */
+function spawnMonster() {
+
+  let monster;
+
+  if (level < 3) {
+
+    monster = ["🐗", "숲멧돼지"];
+
+  } else if (level < 5) {
+
+    monster = ["👹", "동굴 오크"];
+
+  } else if (level < 8) {
+
+    monster = ["🤖", "강철 골렘"];
+
+  } else {
+
+    monster = ["🐲", "고대 드래곤"];
+
+  }
+
+  monsterMaxHp =
+    12 + (level - 1) * 8;
+
+  monsterHp =
+    monsterMaxHp;
+
+  document.getElementById("monster").textContent =
+    monster[0];
+
+  document.getElementById("monsterName").textContent =
+    monster[1];
+
+  update();
+}
+
+/* 직업 선택 */
+function chooseJob(selectedJob) {
+
+  job = selectedJob;
+
+  if (job === "전사") {
+
+    maxHp = 40;
+
+  } else {
+
+    maxHp = 30;
+
+  }
+
+  hp = maxHp;
+
+  skillCooldown = 0;
+
+  showScreen("game");
+
+  spawnMonster();
+
+  document.getElementById("speech").textContent =
+    selectedJob +
+    "이 되었어! 이제 진짜 모험을 시작하자!";
+
+  document.getElementById("log").textContent =
+    "✨ " +
+    selectedJob +
+    " 직업을 선택했다!";
+
+  update();
+}
+
+/* 공격 */
+function attack() {
+
+  if (gameOver) return;
+
+  const stats =
+    getStats();
+
+  let damage =
+    stats.atk +
+    Math.floor(Math.random() * 5);
+
+  /* 궁수 치명타 */
+  if (
+    job === "궁수" &&
+    Math.random() < 0.25
+  ) {
+
+    damage *= 2;
+
+    document.getElementById("log").textContent =
+      "🎯 치명타! " +
+      damage +
+      "의 피해!";
+
+  }
+
+  /* 마법사 추가 피해 */
+  else if (
+    job === "마법사" &&
+    Math.random() < 0.2
+  ) {
+
+    damage += 10;
+
+    document.getElementById("log").textContent =
+      "🔮 마법 공격! " +
+      damage +
+      "의 피해!";
+
+  }
+
+  else {
+
+    document.getElementById("log").textContent =
+      "⚔️ " +
+      damage +
+      "의 피해를 입혔다!";
+
+  }
+
+  monsterHp -= damage;
+
+  if (monsterHp <= 0) {
+
+    victory();
+
+    return;
+
+  }
+
+  enemyAttack();
+
+  reduceCooldown();
+
+  update();
+}
+
+/* 스킬 */
+function useSkill() {
+
+  if (gameOver) return;
+
+  if (job === "없음") {
+
+    document.getElementById("log").textContent =
+      "❗ 아직 직업이 없어 스킬을 사용할 수 없어!";
+
+    return;
+  }
+
+  if (skillCooldown > 0) {
+
+    document.getElementById("log").textContent =
+      "⏳ 스킬 쿨타임: " +
+      skillCooldown +
+      "턴 남음!";
+
+    return;
+  }
+
+  const stats =
+    getStats();
+
+  let damage = 0;
+
+  /* 전사 스킬 */
+  if (job === "전사") {
+
+    damage =
+      stats.atk * 2 +
+      level +
+      Math.floor(Math.random() * 6);
+
+    skillCooldown = 3;
+
+    document.getElementById("speech").textContent =
+      "💥 강력한 강타다!";
+
+    document.getElementById("log").textContent =
+      "💥 강타! " +
+      damage +
+      "의 피해!";
+
+  }
+
+  /* 궁수 스킬 */
+  else if (job === "궁수") {
+
+    let first =
+      stats.atk +
+      Math.floor(Math.random() * 5);
+
+    let second =
+      stats.atk +
+      Math.floor(Math.random() * 5);
+
+    damage =
+      first + second;
+
+    skillCooldown = 3;
+
+    document.getElementById("speech").textContent =
+      "🏹 화살 두 발을 동시에 발사했다!";
+
+    document.getElementById("log").textContent =
+      "🏹 연사! 총 " +
+      damage +
+      "의 피해!";
+
+  }
+
+  /* 마법사 스킬 */
+  else {
+
+    damage =
+      stats.atk * 2 +
+      10 +
+      level * 2;
+
+    skillCooldown = 4;
+
+    document.getElementById("speech").textContent =
+      "🔥 거대한 파이어볼이 날아간다!";
+
+    document.getElementById("log").textContent =
+      "🔥 파이어볼! " +
+      damage +
+      "의 피해!";
+
+  }
+
+  monsterHp -= damage;
+
+  if (monsterHp <= 0) {
+
+    victory();
+
+    return;
+
+  }
+
+  enemyAttack();
+
+  update();
+}
+
+/* 몬스터 공격 */
+function enemyAttack() {
+
+  const stats =
+    getStats();
+
+  let damage =
+    3 +
+    Math.floor(level * 1.5) +
+    Math.floor(Math.random() * 4);
+
+  let counterChance =
+    Math.min(
+      0.6,
+      0.18 + level * 0.045
+    );
+
+  if (
+    Math.random() <
+    counterChance
+  ) {
+
+    damage +=
+      5 +
+      Math.floor(Math.random() * 6);
+
+    document.getElementById("speech").textContent =
+      "💥 몬스터가 강하게 반격했어!";
+
+  }
+
+  damage =
+    Math.max(
+      1,
+      damage - stats.def
+    );
+
+  hp -= damage;
+
+  if (hp <= 0) {
+
+    hp = 0;
+
+    gameOver = true;
+
+    document.getElementById("log").textContent +=
+      " 💫 쓰러졌다! 다시 도전해보자.";
+
+    document.getElementById("speech").textContent =
+      "괜찮아! 다시 도전할 수 있어.";
+
+  }
+}
+
+/* 회복 */
+function heal() {
+
+  if (gameOver) return;
+
+  let amount =
+    10 + level;
+
+  hp =
+    Math.min(
+      maxHp,
+      hp + amount
+    );
+
+  reduceCooldown();
+
+  document.getElementById("log").textContent =
+    "🧪 체력을 " +
+    amount +
+    " 회복했다!";
+
+  enemyAttack();
+
+  update();
+}
+
+/* 쿨타임 감소 */
+function reduceCooldown() {
+
+  if (skillCooldown > 0) {
+
+    skillCooldown--;
+
+  }
+}
+
+/* 승리 */
+function victory() {
+
+  let reward =
+    8 + level * 4;
+
+  gold += reward;
+
+  level++;
+
+  if (skillCooldown > 0) {
+
+    skillCooldown--;
+
+  }
+
+  document.getElementById("log").textContent =
+    "🎉 승리! " +
+    reward +
+    "골드를 얻었다! " +
+    "Lv." +
+    level +
+    " 달성!";
+
+  document.getElementById("speech").textContent =
+    "훌륭해! 하지만 다음 몬스터는 더 강할 거야.";
+
+  if (
+    level === 2 &&
+    job === "없음"
+  ) {
+
+    update();
+
+    showScreen("jobScreen");
+
+    return;
+
+  }
+
+  spawnMonster();
+}
+
+/* 캐릭터 */
+function showCharacter() {
+
+  const stats =
+    getStats();
+
+  document.getElementById("cLevel").textContent =
+    level;
+
+  document.getElementById("cJob").textContent =
+    job;
+
+  document.getElementById("cGold").textContent =
+    gold;
+
+  document.getElementById("cMaxHp").textContent =
+    maxHp;
+
+  document.getElementById("cAtk").textContent =
+    stats.atk;
+
+  document.getElementById("cDef").textContent =
+    stats.def;
+
+  let skillName = "없음";
+
+  if (job === "전사") {
+
+    skillName = "💥 강타";
+
+  }
+
+  if (job === "궁수") {
+
+    skillName = "🏹 연사";
+
+  }
+
+  if (job === "마법사") {
+
+    skillName = "🔥 파이어볼";
+
+  }
+
+  document.getElementById("cSkill").textContent =
+    skillName;
+
+  showScreen("character");
+}
+
+/* 화면 업데이트 */
+function update() {
+
+  const stats =
+    getStats();
+
+  document.getElementById("level").textContent =
+    level;
+
+  document.getElementById("job").textContent =
+    job === "없음"
+    ? "초보자"
+    : job;
+
+  document.getElementById("gold").textContent =
+    gold;
+
+  document.getElementById("monsterHp").textContent =
+    Math.max(0, monsterHp);
+
+  document.getElementById("monsterMaxHp").textContent =
+    monsterMaxHp;
+
+  document.getElementById("playerHp").textContent =
+    Math.max(0, hp);
+
+  document.getElementById("playerMaxHp").textContent =
+    maxHp;
+
+  document.getElementById("monsterBar").style.width =
+    Math.max(
+      0,
+      monsterHp / monsterMaxHp * 100
+    ) + "%";
+
+  document.getElementById("playerBar").style.width =
+    Math.max(
+      0,
+      hp / maxHp * 100
+    ) + "%";
+
+  const skillButton =
+    document.getElementById("skillButton");
+
+  if (job === "없음") {
+
+    skillButton.textContent =
+      "✨ 스킬";
+
+    skillButton.disabled =
+      true;
+
+  }
+
+  else if (skillCooldown > 0) {
+
+    skillButton.textContent =
+      "✨ 스킬 (" +
+      skillCooldown +
+      "턴)";
+
+    skillButton.disabled =
+      true;
+
+  }
+
+  else {
+
+    let name =
+      job === "전사"
+      ? "💥 강타"
+      : job === "궁수"
+      ? "🏹 연사"
+      : "🔥 파이어볼";
+
+    skillButton.textContent =
+      name;
+
+    skillButton.disabled =
+      gameOver;
+
+  }
+
+}
+
+</script>
+
+</body>
+</html>
